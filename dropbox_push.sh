@@ -62,7 +62,8 @@ function wait_for_dropbox() {
 
 pushd ${FROM_DIR} > /dev/null
 
-   for FROM_SUB_DIR in `find . -mindepth 1 -type d`
+   # Process all folders in reverse depth order. See http://stackoverflow.com/questions/11703979/sort-files-by-depth-bash
+   for FROM_SUB_DIR in `find . -mindepth 1 -type d -print | perl -n -e '$x = $_; $x =~ tr%/%%cd; print length($x), " $_";' | sort -k 1,1 -r | sed 's/^[0-9][0-9]* //'`
    do
       # TODO order the processing according to age of folder?
       TO_SUB_DIR=`echo ${TO_DIR}/${FROM_SUB_DIR}`
@@ -81,7 +82,7 @@ pushd ${FROM_DIR} > /dev/null
          wait_for_dropbox
          
          # Copy files
-         pushd ${FROM_SUB_DIR} /dev/null
+         pushd ${FROM_SUB_DIR} > /dev/null
          $( find . -mindepth 1 -maxdepth 1 -type f -exec cp \{\} ${TO_SUB_DIR}/{} \; )
 
          # Wait for dropbox
