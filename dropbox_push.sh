@@ -64,7 +64,7 @@ function wait_for_dropbox() {
   done
 }
 
-pushd ${FROM_DIR} > /dev/null
+pushd ${FROM_DIR} > /dev/null || { echo "Failed to change directory to ${FROM_DIR}" 1>&2; exit; }
 
 while [ ! -z "${RUN_FILE}" ]
 do
@@ -93,8 +93,8 @@ do
             wait_for_dropbox
          
             # Copy files
-            pushd ${FROM_SUB_DIR} > /dev/null
-            $( find . -mindepth 1 -maxdepth 1 -type f -exec rsync -a -v --ignore-existing {} ${TO_SUB_DIR}/{} \; )
+            pushd ${FROM_SUB_DIR} > /dev/null || { echo "Failed to change directory to ${FROM_SUB_DIR}" 1>&2; exit; }
+            $( find . -mindepth 1 -maxdepth 1 -type f -exec rsync -a -v --ignore-existing --timeout 600 {} ${TO_SUB_DIR}/{} \; )
 
             # Wait for dropbox
             wait_for_dropbox
