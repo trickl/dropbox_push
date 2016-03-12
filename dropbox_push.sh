@@ -69,7 +69,7 @@ pushd ${FROM_DIR} > /dev/null || { echo "Failed to change directory to ${FROM_DI
 while [ ! -z "${RUN_FILE}" ]
 do
       # Process all folders in reverse depth order. See http://stackoverflow.com/questions/11703979/sort-files-by-depth-bash
-      for FROM_SUB_DIR in `find . -mindepth 1 -type d -print | perl -n -e '$x = $_; $x =~ tr%/%%cd; print length($x), " $_";' | sort -k 1,1 -r | sed 's/^[0-9][0-9]* //'`
+      for FROM_SUB_DIR in `find . -mindepth 1 -type d -not -iwholename '*@eaDir*' -print | perl -n -e '$x = $_; $x =~ tr%/%%cd; print length($x), " $_";' | sort -k 1,1 -r | sed 's/^[0-9][0-9]* //'`
       do
          while [[ ! -f $RUN_FILE ]]
          do 
