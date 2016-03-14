@@ -1,6 +1,12 @@
 #!/bin/bash
 # This script should perform a one-way synchronisation with Dropbox
 
+# Output every command to console (for debugging)
+set -x
+
+# Any subsequent commands which fail will cause the shell script to exit immediately
+set -e
+
 while [[ $# > 1 ]]
 do
 key="$1"
@@ -31,6 +37,7 @@ esac
 shift # past argument or value
 done
 
+# Validate arguments are sensible
 if [[ ! -d $FROM_DIR ]] 
 then
    echo --from $FROM_DIR does not exist
@@ -81,13 +88,12 @@ do
          SYNC_SUB_DIR=`echo ${SYNC_DIR}/${FROM_SUB_DIR}`
          echo -n "Synchronising ${FROM_SUB_DIR}... "
 
-         [[ -d ${TO_SUB_DIR} ]] || mkdir -p ${TO_SUB_DIR}
          [[ -d ${SYNC_SUB_DIR} ]] || mkdir -p ${SYNC_SUB_DIR}
 
          if [[ ! -f ${SYNC_SUB_DIR}/.uploaded ]]
          then
             # Allow synchronisation (allows users to manually remove the marker flag to force a resync).
-            dropbox exclude remove ${TO_SUB_DIR}
+            [[ -d ${TO_SUB_DIR} ]]  || dropbox exclude remove ${TO_SUB_DIR} | grep "excluded" || mkdir -p ${TO_SUB_DIR}
 
             # Wait for dropbox
             wait_for_dropbox
@@ -96,18 +102,16 @@ do
             pushd ${FROM_SUB_DIR} > /dev/null || { echo "Failed to change directory to ${FROM_SUB_DIR}" 1>&2; exit; }
 
             # If the directory is not empty copy all the files over
-            $( $(ls -A .) &&  find . -mindepth 1 -maxdepth 1 -type f -exec rsync -a -v --ignore-existing --timeout 600 {} ${TO_SUB_DIR}/{} \; )
+            [[ $( ls -A . )$ ]] &&  find . -mindepth 1 -maxdepth 1 -type f -exec rsync -a -v -q --ignore-existing --timeout 600 {} ${TO_SUB_DIR}/{} \;
 
             # Wait for dropbox
             wait_for_dropbox
 
             # Stop synchronisation
-            dropbox exclude add ${TO_SUB_DIR}
-
-            touch ${SYNC_SUB_DIR}/.uploaded
+            dropbox exclude add ${TO_SUB_DIR} | grep "excluded" && touch ${SYNC_SUB_DIR}/.uploaded
 
             popd > /dev/null
-         
+
          fi
 
          echo "completed."
