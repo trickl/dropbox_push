@@ -69,9 +69,9 @@ pushd ${FROM_DIR} > /dev/null || { echo "Failed to change directory to ${FROM_DI
 while [ ! -z "${RUN_FILE}" ]
 do
       # Process all folders in reverse depth order. See http://stackoverflow.com/questions/11703979/sort-files-by-depth-bash
-      for FROM_SUB_DIR in `find . -mindepth 1 -type d -not -iwholename '*@eaDir*' -print | perl -n -e '$x = $_; $x =~ tr%/%%cd; print length($x), " $_";' | sort -k 1,1 -r | sed 's/^[0-9][0-9]* //'`
+      for FROM_SUB_DIR in `find . -mindepth 1 -type d ! \( -empty -o -iwholename '*.git*' -o -iwholename '*@eaDir*' \) -print | perl -n -e '$x = $_; $x =~ tr%/%%cd; print length($x), " $_";' | sort -k 1,1 -r | sed 's/^[0-9][0-9]* //'`
       do
-         while [[ ! -f $RUN_FILE ]]
+         while [ ! -f $RUN_FILE -o -z $FROM_SUB_DIR ]
          do 
             sleep 60
          done 
@@ -94,7 +94,9 @@ do
          
             # Copy files
             pushd ${FROM_SUB_DIR} > /dev/null || { echo "Failed to change directory to ${FROM_SUB_DIR}" 1>&2; exit; }
-            $( find . -mindepth 1 -maxdepth 1 -type f -exec rsync -a -v --ignore-existing --timeout 600 {} ${TO_SUB_DIR}/{} \; )
+
+            # If the directory is not empty copy all the files over
+            $( $(ls -A .) &&  find . -mindepth 1 -maxdepth 1 -type f -exec rsync -a -v --ignore-existing --timeout 600 {} ${TO_SUB_DIR}/{} \; )
 
             # Wait for dropbox
             wait_for_dropbox
@@ -110,7 +112,10 @@ do
 
          echo "completed."
       done
-   popd > /dev/null
 
+      echo "Everything is synchronized. Sleeping for five minutes."
+      sleep 300
 done
+
+popd > /dev/null
 
