@@ -65,9 +65,14 @@ echo Syncing Dropbox...
 echo From "${FROM_DIR}"
 echo To   "${TO_DIR}"
 
+function show_sync_status() {
+   FILE_COUNT_FROM="$( ls /home/tgee/Dropbox/Pictures/2014/06/05 | wc)"
+   FILE_COUNT_TO="$( ls /home/tgee/Dropbox/Pictures/2014/06/05 | wc)"
+}
+
 function wait_for_dropbox() {
   until `dropbox status| grep -q "Up to date"`; do
-    sleep 1
+    sleep 5
   done
 }
 
@@ -93,7 +98,7 @@ do
          if [[ ! -f ${SYNC_SUB_DIR}/.uploaded ]]
          then
             # Allow synchronisation (allows users to manually remove the marker flag to force a resync).
-            [[ -d ${TO_SUB_DIR} ]]  || dropbox exclude remove ${TO_SUB_DIR} | grep "excluded" || mkdir -p ${TO_SUB_DIR}
+            [[ -d ${TO_SUB_DIR} ]]  || dropbox exclude remove ${TO_SUB_DIR} | grep "No longer excluded" || mkdir -p ${TO_SUB_DIR}
 
             # Wait for dropbox
             wait_for_dropbox
@@ -108,7 +113,7 @@ do
             wait_for_dropbox
 
             # Stop synchronisation
-            dropbox exclude add ${TO_SUB_DIR} | grep "excluded" && touch ${SYNC_SUB_DIR}/.uploaded
+            dropbox exclude add ${TO_SUB_DIR} | grep "Excluded" && touch ${SYNC_SUB_DIR}/.uploaded
 
             popd > /dev/null
 
